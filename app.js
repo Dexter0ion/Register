@@ -45,12 +45,24 @@ app.use('/home',routes); // 即为为路径 /home 设置路由
 app.use("/logout",routes); // 即为为路径 /logout 设置路由
 */
 //获取前台表单信息
+  var mysql = require('mysql');
+  var connection = mysql.createConnection({
+    host: '47.88.16.241',
+    user: 'admin',
+    password: 'adminpassword',
+    database: 'regisdb',
+    port: '3306',
+    charset: 'UTF8_GENERAL_CI'
+  });
+
+
 app.post('/test', function (req, res) {
   console.log(req.body.name);
   console.log(req.body.tel);
 });
 
 app.post('/test2', function (req, res) {
+
   //获取前台数据
   console.log(req.body.memberName);
   console.log(req.body.memberSchoolNumber);
@@ -71,15 +83,7 @@ app.post('/test2', function (req, res) {
   var memberMessage = req.body.memberMessage;
   //同步数据库
 
-  var mysql = require('mysql');
-  var connection = mysql.createConnection({
-    host: '47.88.16.241',
-    user: 'admin',
-    password: 'adminpassword',
-    database: 'regisdb',
-    port: '3306',
-    charset: 'UTF8_GENERAL_CI'
-  });
+
   connection.connect();
 
   /*
@@ -124,18 +128,78 @@ app.post('/test2', function (req, res) {
     console.log('\n');
   });
 
+
+  //打印excel表
+
+
+  connection.query("select * from tblMemberRegisInfo into outfile '/tmp/test1.xls'", usr, function (err, result) {
+    if (err) throw err;
+    console.log('outfile complete');
+
+  });
+
   connection.end();
 });
 
 //获取前台管理员登陆数据
 
 app.post('/regisadmin', function (req, res) {
+
+
+  connection.connect();
   console.log(req.body.adminname);
   console.log(req.body.adminpassword);
+  var sqlStr = "select * from tblRegisAdmin where adminName='"
+    + req.body.adminname + "' and adminPassword = '"
+    + req.body.adminpassword + "'";
+  console.log(sqlStr);
+
+
+  /*
+  connection.query(sqlStr, function (err, result) {
+      if (err) throw err;
+      
+      if (!sqlStr) {
+        console.log("no such admin");
+      }
+      else if (sqlStr) {
+        console.log("log in successful");
+      }
+
+    });
+*/
+  connection.query(sqlStr, function (err, result, fields, row) {
+    if (err) {
+      throw err;
+    }
+    if(result.length==0){
+      console.log("No such admin account|LOG IN FAILED");
+    }
+    else if(result.length>0){
+      console.log("LOG IN Successful");
+      res.redirect("/regisAdmin");
+    }
+    //获得符合查询条件的条数
+    console.log(result.length);
+    console.log(row);
+    //console.log(fields);
+  });
+
+
+  console.log('\n');
+  connection.end();
 });
+
+
+
 
 app.get('/adminGetdata', function (req, res) {
   res.send('hello world');
+});
+
+app.get('/downloadExcel',function(req,res){
+  res.send('hello world');
+  console.log("downloading");
 });
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
@@ -146,6 +210,7 @@ app.use(function (req, res, next) {
 
 // error handler
 app.use(function (err, req, res, next) {
+
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
