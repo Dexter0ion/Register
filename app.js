@@ -45,6 +45,23 @@ app.use('/home',routes); // 即为为路径 /home 设置路由
 app.use("/logout",routes); // 即为为路径 /logout 设置路由
 */
 //获取前台表单信息
+var mysql = require('mysql');
+var connection = mysql.createConnection({
+  host: '47.88.16.241',
+  user: 'admin',
+  password: 'adminpassword',
+  database: 'regisdb',
+  port: '3306',
+  charset: 'UTF8_GENERAL_CI'
+});
+
+
+app.post('/test', function (req, res) {
+  console.log(req.body.name);
+  console.log(req.body.tel);
+});
+
+app.post('/test2', function (req, res) {
   var mysql = require('mysql');
   var connection = mysql.createConnection({
     host: '47.88.16.241',
@@ -54,15 +71,6 @@ app.use("/logout",routes); // 即为为路径 /logout 设置路由
     port: '3306',
     charset: 'UTF8_GENERAL_CI'
   });
-
-
-app.post('/test', function (req, res) {
-  console.log(req.body.name);
-  console.log(req.body.tel);
-});
-
-app.post('/test2', function (req, res) {
-
   //获取前台数据
   console.log(req.body.memberName);
   console.log(req.body.memberSchoolNumber);
@@ -111,34 +119,56 @@ app.post('/test2', function (req, res) {
     memberTeam: req.body.memberTeam,
     memberMessage: req.body.memberMessage,
   };
+
+  var schNumCheck=0;
+  //检索学号
+  var schNumberSql = "select * from tblMemberRegisInfo where memberSchoolNumber = '"+req.body.memberSchoolNumber+"'";
+  connection.query(schNumberSql, usr, function (err, result) {
+    if (err) throw err;
+    schNumCheck = result.length;
+    console.log(schNumCheck);
+      if(schNumCheck==0){
+  //插入数据
   connection.query('insert into tblMemberRegisInfo set ?', usr, function (err, result) {
     if (err) throw err;
     console.log('inserted complete');
     console.log(result);
     console.log('\n');
+  res.send("报名完成 您的数据已保存至数据库");
   });
+  };
+
+  if(schNumCheck>0){
+    res.send("您的学号已被占用");
+  }
+
+  });
+
 
   //显示查询数据
   connection.query('select * from tblMemberRegisInfo', function (err, rows, fields) {
-    if (err) throw err;
+    //if (err) throw err;
     console.log('selected after deleted');
     for (var i = 0, usr; usr = rows[i++];) {
       console.log('user name=' + usr.memberName);
     }
     console.log('\n');
+
+
   });
 
 
+
+
+
+});
+
+app.post('/saveSqlExcel', function (req, res) {
   //打印excel表
-
-
   connection.query("select * from tblMemberRegisInfo into outfile '/tmp/test1.xls'", usr, function (err, result) {
     if (err) throw err;
     console.log('outfile complete');
-
-  });
-
-  connection.end();
+});
 });
 
 //获取前台管理员登陆数据
@@ -172,10 +202,10 @@ app.post('/regisadmin', function (req, res) {
     if (err) {
       throw err;
     }
-    if(result.length==0){
+    if (result.length == 0) {
       console.log("No such admin account|LOG IN FAILED");
     }
-    else if(result.length>0){
+    else if (result.length > 0) {
       console.log("LOG IN Successful");
       res.redirect("/regisAdmin");
     }
@@ -187,7 +217,7 @@ app.post('/regisadmin', function (req, res) {
 
 
   console.log('\n');
-  connection.end();
+
 });
 
 
@@ -197,7 +227,7 @@ app.get('/adminGetdata', function (req, res) {
   res.send('hello world');
 });
 
-app.get('/downloadExcel',function(req,res){
+app.get('/downloadExcel', function (req, res) {
   res.send('hello world');
   console.log("downloading");
 });
